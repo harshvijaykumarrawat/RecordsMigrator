@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+  <html>
+    <head>
+    </head>
+    <body>
+		<div id="error">
+		</div>
+		<div id="modeSelection">
+			Record Id : <input type="text" id="recordId" maxlength="18">
+			<button id="init_mode_1">Create Sketch</button>
+			<button id="moed2Select">Load Sketch</button>
+			<button id="moed3Select" disabled>Create Bulk Sketch</button>
+		</div>
+		<div id="mode1" >
+			<div id="mode1_step1">
+				<!--This mode to select above parent or below child once only-->
+			</div>
+		</div>
+		<div id="mode2">
+			<div id="mode2_step1">
+				Record Id : <input type="text" maxlength="18">
+			</div>
+			<div id="mode1_step2">
+				<!--This mode to select above parent or below child once only-->
+				Record Id : <input type="text" maxlength="18">
+				<button id="changeColor"></button>
+				
+			</div>
+		</div>
+		<script src="screen.js"></script>
+		<script src="sketch.js"></script>
+    </body>
+  </html>
