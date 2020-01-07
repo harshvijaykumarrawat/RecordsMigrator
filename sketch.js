@@ -1,28 +1,27 @@
-var sketch = {objects:{}, records:{}, record : {}, to_up:[], to_down:[], record_id_map:{}};
+
 var dataMap = null;
 let is_up_tracing = false, is_down_tracing = false;
 
-function get_key_object_map(callback){
+function get_key_object_map(record_id, callback){
 	if(dataMap == null){
 		executeGET({mode:0}, (resp) => {
 			if(resp != null){
 				let objectInfo = JSON.parse(resp);
-				dataMap = createKeyObjectMap(objectInfo)
-				console.log('*************')
-				console.log(dataMap)
-				let object = identify_object(record_id_elem.value,dataMap);
+				dataMap = createKeyObjectMap(objectInfo);
+				let object = identify_object(record_id,dataMap);
 				callback(object);
 			}
 		});
 	}else{
-		let object = identify_object(record_id_elem.value,dataMap);
+		let object = identify_object(record_id,dataMap);
 		callback(object);
 	}
 }
 
-function get_object(object, record_id){
+function get_object(object, record_id, callback, parent_name){
 	if(object == null){
 		console.log('Wrong Data');
+		callback(false);
 		return;
 	}else{
 		if(sketch.objects[object] == undefined){
@@ -31,18 +30,46 @@ function get_object(object, record_id){
 					console.log('Describe obj')
 					let object_value = JSON.parse(resp);
 					get_object_field_map(object_value);
-					get_record(object, record_id);
+					if(!is_up_tracing && !is_down_tracing)
+						get_record(object, record_id, callback);
+					if(is_up_tracing && !is_down_tracing)
+						get_parent_record(object, record_id, parent_name, callback);
 				}
 			});
 		}else if(record_id != null){
-			get_record(object, record_id);
+			if(!is_up_tracing && !is_down_tracing)
+				get_record(object, record_id, callback);
+			if(is_up_tracing && !is_down_tracing)
+				get_parent_record(object, record_id, parent_name, callback);
 		}
 	}
 }
 
-function get_record(object, record_id){
+function get_parent_record(object, record_id, parent_name, callback){
 	if(record_id == null){
 		console.log('Wrong Data');
+		callback(false);
+		return;
+	}else{
+		if(sketch.record_id_map.record_id == undefined){
+			executeGET({mode:3, object:parent_name}, (resp) => {
+				if(resp != null){
+					let record = JSON.parse(resp);
+					console.log(record)
+					setup_record_in_order(object, record)
+				}
+				callback(true);
+			});
+		}else{
+			callback(true);
+		}
+	}
+}
+
+function get_record(object, record_id, callback){
+	if(record_id == null){
+		console.log('Wrong Data');
+		callback(false);
 		return;
 	}else{
 		if(sketch.record_id_map.record_id == undefined){
@@ -51,10 +78,10 @@ function get_record(object, record_id){
 					let record = JSON.parse(resp);
 					setup_record_in_order(object, record)
 				}
-				console.log(JSON.stringify(sketch));
+				callback(true);
 			});
 		}else{
-			console.log(JSON.stringify(sketch));
+			callback(true);
 		}
 	}
 }
@@ -70,9 +97,9 @@ function createKeyObjectMap(response_property){
 }
 
 function get_object_field_map(object_value){
-	var field_map = [];
+	let field_map = [];
 	for(let i = 0; i < object_value.fields.length; i++){
-		field_map.push({name : object_value.fields[i].name, isParent : object_value.fields[i].referenceTo != undefined && object_value.fields[i].referenceTo.length > 0});
+		field_map.push({name : object_value.fields[i].name, parent_api_name : object_value.fields[i].relationshipName , isParent : object_value.fields[i].referenceTo != undefined && object_value.fields[i].referenceTo.length > 0});
 	}
 	sketch.objects[object_value.name] = field_map;
 	if(!sketch.records.hasOwnProperty(object_value.name)){
@@ -94,16 +121,20 @@ function setup_record_in_order(object, record){
 	}
 	sketch.record_id_map[record.Id] = recordArray;
 	sketch.records[object].push(recordArray);
-	if(record.Id.startsWith(record_id_elem.value)){
+	if (record.Id.startsWith(record_id_elem.value)
+		&& !is_up_tracing
+		&& !is_down_tracing){
 		sketch.record.object = object;
+		sketch.record.id = record.Id;
 		sketch.record.index = sketch.records[object].length-1;
+		sketch.record.values = recordArray;
 		sketch.record_id_map[record_id_elem.value] = recordArray;
 	}
-	if(is_up_tracing){
-		sketch.is_up.push({object:object,index : sketch.records[object].length-1});
+	if(is_up_tracing && !is_down_tracing){
+		sketch.to_up.push({object:object,index : sketch.records[object].length-1});
 	}
-	if(is_down_tracing){
-		sketch.is_down.push({object:object,index : sketch.records[object].length-1});
+	if(!is_up_tracing && is_down_tracing){
+		sketch.to_down.push({object:object,index : sketch.records[object].length-1});
 	}
 }
 
@@ -118,6 +149,9 @@ function executeGET(config, callback){
 		break;
 		case 2:
 			callback(execute("GET", baseURL + "services/data/v37.0/sobjects/"+config.object+"/describe",{'Authorization':'Bearer '+token}));
+		break;
+		case 3:
+			callback(execute("GET", baseURL + "services/data/v37.0/sobjects/"+sketch.object+'/'+sketch.record.id+'/'+config.object,{'Authorization':'Bearer '+token}));
 		break;
 	}
 }
@@ -140,12 +174,6 @@ function execute(method, url, headers){
 function create_sketch(){
 	var export_sketch = JSON.parse(JSON.stringify(sketch));
 	export_sketch.record_id_map = undefined;
-	navigator.clipboard.writeText(JSON.stringify(export_sketch))
-	.then(() => {
-		console.log('Text copied to clipboard');
-	})
-	.catch(err => {
-		// This can happen if the user denies clipboard permissions:
-		console.error('Could not copy text: ', err);
-	});
+	export_sketch.object = undefined;
+	console.log(JSON.stringify(export_sketch));
 }
