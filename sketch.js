@@ -1,4 +1,3 @@
-
 var dataMap = null;
 let is_up_tracing = false, is_down_tracing = false;
 
@@ -32,15 +31,19 @@ function get_object(object, record_id, callback, parent_name){
 					get_object_field_map(object_value);
 					if(!is_up_tracing && !is_down_tracing)
 						get_record(object, record_id, callback);
-					if(is_up_tracing && !is_down_tracing)
+					else if(is_up_tracing && !is_down_tracing)
 						get_parent_record(object, record_id, parent_name, callback);
+					else
+						callback(true);
 				}
 			});
 		}else if(record_id != null){
 			if(!is_up_tracing && !is_down_tracing)
 				get_record(object, record_id, callback);
-			if(is_up_tracing && !is_down_tracing)
+			else if(is_up_tracing && !is_down_tracing)
 				get_parent_record(object, record_id, parent_name, callback);
+			else
+				callback(true);
 		}
 	}
 }
@@ -76,12 +79,41 @@ function get_record(object, record_id, callback){
 			executeGET({mode:1, object:object, record:record_id}, (resp) => {
 				if(resp != null){
 					let record = JSON.parse(resp);
-					setup_record_in_order(object, record)
+					setup_record_in_order(object, record);
 				}
 				callback(true);
 			});
 		}else{
 			callback(true);
+		}
+	}
+}
+
+function get_child_records(object, child_name, callback){
+	if(sketch.record.id == null){
+		console.log('Wrong Data');
+		callback(false);
+		return;
+	}else{
+		try{
+		executeGET({mode:3, object:child_name}, (resp) => {
+			if(resp != null){
+				let record = JSON.parse(resp);
+				console.log(record)
+				if(record.records.length > 0){
+					get_object(object, null, (isSuccess) => {
+						setup_records_in_order(object, record);
+						callback(true);
+					}, null);
+				}else{
+					callback(false);
+				}
+			}else{
+				callback(false);
+			}
+		});
+		}catch(ex){
+			callback(false);
 		}
 	}
 }
@@ -104,6 +136,10 @@ function get_object_field_map(object_value){
 	sketch.objects[object_value.name] = field_map;
 	if(!sketch.records.hasOwnProperty(object_value.name)){
 		sketch.records[object_value.name] = [];
+	}
+	sketch.childs[object_value.name] = [];
+	for(let i in object_value.childRelationships){
+		sketch.childs[object_value.name].push({name:object_value.childRelationships[i].childSObject, field : object_value.childRelationships[i].field, relationship : object_value.childRelationships[i].relationshipName});		
 	}
 }
 
@@ -135,6 +171,16 @@ function setup_record_in_order(object, record){
 	}
 	if(!is_up_tracing && is_down_tracing){
 		sketch.to_down.push({object:object,index : sketch.records[object].length-1});
+	}
+}
+
+function setup_records_in_order(object, records){
+	for(var i in records.records){
+		setup_record_in_order(object, records.records[i])
+	}
+	let recordArray = [];
+	for(let i = 0; i < sketch.objects[object].length; i++){
+		recordArray.push(record[sketch.objects[object][i].name]);
 	}
 }
 
