@@ -8,7 +8,7 @@
 		<div id="modeSelection">
 			Record Id : <input type="text" id="recordId" maxlength="18">
 			<button id="init_mode_1">Create Sketch</button>
-			<button id="moed2Select">Load Sketch</button>
+			<button id="init_mode_2">Load Sketch</button>
 			<button id="moed3Select" disabled>Create Bulk Sketch</button>
 		</div>
 		<div id="mode1" >
@@ -33,12 +33,27 @@
 		</div>
 		<div id="mode2">
 			<div id="mode2_step1">
-				Record Id : <input type="text" maxlength="18">
+			Load Sketch :
+				<textarea id="sketch_json" rows="4" cols="20">
+				</textarea>
+				<button id="mode2_step1_submit"></button>
 			</div>
-			<div id="mode1_step2">
-				<!--This mode to select above parent or below child once only-->
-				Record Id : <input type="text" maxlength="18">
+			<div id="mode2_step2">
+				Object :
+				<input type="checkbox" name="vehicle" value="Bike"> I have a bike<br>
+				
+				Parents :
+				<input type="checkbox" name="vehicle" value="Car" checked> I have a car<br>
+				<input type="checkbox" name="vehicle" value="Car" checked> I have a car<br>
+				<input type="checkbox" name="vehicle" value="Car" checked> I have a car<br>
+				<input type="checkbox" name="vehicle" value="Car" checked> I have a car<br>
+				
+				Childs : 
+				<input type="checkbox" name="vehicle" value="Car" checked> I have a car<br>
 				<button id="changeColor"></button>
+				
+				Record Id : <input type="text" maxlength="18">
+				<button id="mode2_step2_submit"></button>
 				
 			</div>
 		</div>

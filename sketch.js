@@ -219,7 +219,9 @@ function execute(method, url, headers){
 
 function create_sketch(){
 	var export_sketch = JSON.parse(JSON.stringify(sketch));
+	export_sketch.record_id_list = Object.keys(export_sketch.record_id_map);
 	export_sketch.record_id_map = undefined;
 	export_sketch.object = undefined;
-	console.log(JSON.stringify(export_sketch));
+	export_sketch.childs = undefined;
+	final_sketch.innerHTML = JSON.stringify(export_sketch)
 }

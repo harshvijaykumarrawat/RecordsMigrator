@@ -6,6 +6,7 @@ let selected_parent = document.getElementById('selected_parent');
 let selected_children = document.getElementById('selected_children');
 let mode1_step1_submit = document.getElementById('mode1_step1_submit');
 let mode1_step2_submit = document.getElementById('mode1_step2_submit');
+let final_sketch = document.getElementById('final_sketch');
 var baseURL, token;
 var text_value_map = {};
 var sketch = {objects:{}, records:{}, record : {}, object : {}, to_up:[], to_down:[], record_id_map:{}, childs:{}};
@@ -80,9 +81,7 @@ mode1_step2_submit.onclick = function(element) {
 		console.log(text, text_value_map[text]);
 		get_child_records(text, text_value_map[text], (isSuccess)=>{
 			if(isSuccess){
-				if(isSuccess){
-					console.log(sketch)
-				}
+				
 			}
 		})
 	}
