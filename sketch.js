@@ -1,5 +1,5 @@
 var dataMap = null;
-let is_up_tracing = false, is_down_tracing = false;
+let is_up_tracing = false, is_down_tracing = false, is_creating_sketch = true;
 
 function get_key_object_map(record_id, callback){
 	if(dataMap == null){
@@ -28,13 +28,17 @@ function get_object(object, record_id, callback, parent_name){
 				if(resp != null){
 					console.log('Describe obj')
 					let object_value = JSON.parse(resp);
-					get_object_field_map(object_value);
-					if(!is_up_tracing && !is_down_tracing)
-						get_record(object, record_id, callback);
-					else if(is_up_tracing && !is_down_tracing)
-						get_parent_record(object, record_id, parent_name, callback);
-					else
-						callback(true);
+					if(is_creating_sketch){
+						get_object_field_map(object_value);
+						if(!is_up_tracing && !is_down_tracing)
+							get_record(object, record_id, callback);
+						else if(is_up_tracing && !is_down_tracing)
+							get_parent_record(object, record_id, parent_name, callback);
+						else
+							callback(true);	
+					}else{
+						get_object_field_status(object_value);
+					}
 				}
 			});
 		}else if(record_id != null){
@@ -43,7 +47,9 @@ function get_object(object, record_id, callback, parent_name){
 			else if(is_up_tracing && !is_down_tracing)
 				get_parent_record(object, record_id, parent_name, callback);
 			else
-				callback(true);
+				callback(false);
+		}else{
+			callback(true);
 		}
 	}
 }
@@ -131,7 +137,7 @@ function createKeyObjectMap(response_property){
 function get_object_field_map(object_value){
 	let field_map = [];
 	for(let i = 0; i < object_value.fields.length; i++){
-		field_map.push({name : object_value.fields[i].name, parent_api_name : object_value.fields[i].relationshipName , isParent : object_value.fields[i].referenceTo != undefined && object_value.fields[i].referenceTo.length > 0});
+		field_map.push({name : object_value.fields[i].name, parent_api_name : object_value.fields[i].relationshipName , isParent : object_value.fields[i].referenceTo != undefined && object_value.fields[i].referenceTo.length > 0, is_createable : object_value.fields[i].createable});
 	}
 	sketch.objects[object_value.name] = field_map;
 	if(!sketch.records.hasOwnProperty(object_value.name)){

@@ -117,7 +117,9 @@ function load_parents(){
 	let innerHTML = "";
 	if(sketch.objects[sketch.object] != undefined){
 		for(var i in sketch.objects[sketch.object]){
-			if(sketch.objects[sketch.object][i].isParent){
+			if(sketch.objects[sketch.object][i].isParent
+				&& sketch.objects[sketch.object][i].is_createable
+				&& sketch.objects[sketch.object][i].name != 'OwnerId'){
 				innerHTML += '<option value='+sketch.objects[sketch.object][i].parent_api_name+'>'+sketch.objects[sketch.object][i].name+'</option>'
 			}else{
 				//console.log(sketch.objects[sketch.object][i].name+' not a parent');
