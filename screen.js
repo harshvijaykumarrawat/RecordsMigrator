@@ -10,6 +10,7 @@ let final_sketch = document.getElementById('final_sketch');
 var baseURL, token;
 var text_value_map = {};
 var sketch = {objects:{}, records:{}, record : {}, object : {}, to_up:[], to_down:[], record_id_map:{}, childs:{}};
+sketch.records.RecordTypes = {};
 //Initiating mode 1
 //1. read record id
 //2. read cookies
@@ -85,6 +86,19 @@ mode1_step2_submit.onclick = function(element) {
 			}
 		})
 	}
+}
+
+mode1_step3_start.onclick = function(element) {
+	iteration = 0;
+	is_up_tracing = true;
+	is_down_tracing = false; 
+	getRecordTypeIndex(()=>{
+		return;
+	});
+}
+
+mode1_step2_finish.onclick = function(element) {
+	create_sketch();
 }
 
 function getBaseUrl(url){

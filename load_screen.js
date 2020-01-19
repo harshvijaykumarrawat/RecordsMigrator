@@ -3,10 +3,10 @@ let mode2_step1_submit = document.getElementById('mode2_step1_submit');
 
 mode2_step1_submit.onclick = function(element) {
 	
-	let sketchValue = sketch_json.innerHTML.trim();
+	let sketchValue = sketch_json.value.trim();
 	if(sketchValue != null){
 		try{
-			let sketch = json.parse(sketchValue);
+			let sketch = JSON.parse(sketchValue);
 			initModeTwo(sketch);
 		}catch(ex){
 			console.log('Bad JSON');
@@ -19,5 +19,5 @@ mode2_step1_submit.onclick = function(element) {
 };
 
 function initModeTwo(sketch){
-	
+	read_sketch(sketch)
 }

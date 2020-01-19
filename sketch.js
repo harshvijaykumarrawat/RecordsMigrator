@@ -1,4 +1,4 @@
-var dataMap = null;
+var dataMap = null, recordTypeIndex = [], iteration;
 let is_up_tracing = false, is_down_tracing = false, is_creating_sketch = true;
 
 function get_key_object_map(record_id, callback){
@@ -137,7 +137,12 @@ function createKeyObjectMap(response_property){
 function get_object_field_map(object_value){
 	let field_map = [];
 	for(let i = 0; i < object_value.fields.length; i++){
-		field_map.push({name : object_value.fields[i].name, parent_api_name : object_value.fields[i].relationshipName , isParent : object_value.fields[i].referenceTo != undefined && object_value.fields[i].referenceTo.length > 0, is_createable : object_value.fields[i].createable});
+		if(object_value.fields[i].name == 'RecordTypeId'){
+			field_map.push({name : object_value.fields[i].name, parent_api_name : object_value.fields[i].relationshipName , isParent : false, is_createable : object_value.fields[i].createable});
+		}else{
+			field_map.push({name : object_value.fields[i].name, parent_api_name : object_value.fields[i].relationshipName , isParent : object_value.fields[i].referenceTo != undefined && object_value.fields[i].referenceTo.length > 0, is_createable : object_value.fields[i].createable});
+		}
+		
 	}
 	sketch.objects[object_value.name] = field_map;
 	if(!sketch.records.hasOwnProperty(object_value.name)){
@@ -159,7 +164,13 @@ function identify_object(record_id,dataMap){
 function setup_record_in_order(object, record){
 	var recordArray = [];
 	for(let i = 0; i < sketch.objects[object].length; i++){
+		console.log(sketch.objects[object][i].name)
 		recordArray.push(record[sketch.objects[object][i].name]);
+		if(sketch.objects[object][i].name == 'RecordTypeId'
+			&& record[sketch.objects[object][i].name] != null){
+			recordTypeIndex.push(record[sketch.objects[object][i].name]);
+			console.log('Record type Ids:'+record[sketch.objects[object][i].name])
+		}
 	}
 	sketch.record_id_map[record.Id] = recordArray;
 	sketch.records[object].push(recordArray);
@@ -193,17 +204,25 @@ function setup_records_in_order(object, records){
 function executeGET(config, callback){
 	var result;
 	switch(config.mode){
+		//Get List of sObjects
 		case 0:
 			callback(execute("GET", baseURL + "services/data/v37.0/sobjects/",{'Authorization':'Bearer '+token}));
 		break;
+		//Get record
 		case 1:
 			callback(execute("GET", baseURL + "services/data/v37.0/sobjects/"+config.object+'/'+config.record,{'Authorization':'Bearer '+token}));
 		break;
+		//Describe sobject
 		case 2:
 			callback(execute("GET", baseURL + "services/data/v37.0/sobjects/"+config.object+"/describe",{'Authorization':'Bearer '+token}));
 		break;
+		//Get Parents of Child
 		case 3:
 			callback(execute("GET", baseURL + "services/data/v37.0/sobjects/"+sketch.object+'/'+sketch.record.id+'/'+config.object,{'Authorization':'Bearer '+token}));
+		break;
+		//Get Record Type records
+		case 4:
+			callback(execute("GET", baseURL + "services/data/v37.0/sobjects/RecordType/"+config.recordTypeId,{'Authorization':'Bearer '+token}));
 		break;
 	}
 }
@@ -223,11 +242,30 @@ function execute(method, url, headers){
 	}
 }
 
+function getRecordTypeIndex(callback){
+	if(iteration < recordTypeIndex.length){		
+		executeGET({mode:4, recordTypeId:recordTypeIndex[iteration]}, (resp) => {
+			if(resp != null){
+				let record = JSON.parse(resp);
+				sketch.records.RecordTypes[record.Id] = {name : record.Name, devName : record.DeveloperName}
+				sketch.record_id_map[record.Id] = record
+				iteration++
+				getRecordTypeIndex(callback)
+			}
+			callback(true);
+		});
+	}else{
+		callback();
+	}
+	
+	
+}
+
 function create_sketch(){
 	var export_sketch = JSON.parse(JSON.stringify(sketch));
 	export_sketch.record_id_list = Object.keys(export_sketch.record_id_map);
 	export_sketch.record_id_map = undefined;
 	export_sketch.object = undefined;
-	export_sketch.childs = undefined;
+	export_sketch.childs = undefined;	
 	final_sketch.innerHTML = JSON.stringify(export_sketch)
 }
